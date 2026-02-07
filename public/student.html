@@ -1,0 +1,253 @@
+<!-- STUDENT SECTION START -->
+<div class="container-fluid p-4 bg-light">
+
+  <!-- Title -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold">🎓 Student Management</h3>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal" id="openAddStudentModal">
+      <i class="bi bi-person-plus"></i> Add Student
+    </button>
+  </div>
+
+ <!-- STAT CARDS -->
+<div class="row g-4 mb-4">
+
+  <!-- Total Students -->
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0">
+      <div class="card-body d-flex justify-content-between">
+        <div>
+          <h6>Total Students</h6>
+          <h3 class="fw-bold" id="totalStudents">0</h3>
+        </div>
+        <i class="bi bi-people fs-1 text-primary"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Students with Books -->
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0">
+      <div class="card-body d-flex justify-content-between">
+        <div>
+          <h6>Students with Books</h6>
+          <h3 class="fw-bold" id="studentsWithBooks">0</h3>
+        </div>
+        <i class="bi bi-journal-bookmark fs-1 text-warning"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Issued Books (Total) -->
+<div class="col-md-3">
+  <div class="card shadow-sm border-0">
+    <div class="card-body d-flex justify-content-between">
+      <div>
+        <h6>Issued Books</h6>
+        <h3 class="fw-bold" id="totalIssuedBooks">0</h3>
+      </div>
+      <i class="bi bi-book-half fs-1 text-success"></i>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Overdue Books -->
+<div class="col-md-3">
+  <div class="card shadow-sm border-0">
+    <div class="card-body d-flex justify-content-between">
+      <div>
+        <h6>Overdue Books</h6>
+        <h3 class="fw-bold text-danger" id="overdueBooksCount">0</h3>
+      </div>
+      <i class="bi bi-calendar-x fs-1 text-danger"></i>
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+
+  <!-- STUDENT TABLE -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-bold d-flex align-items-center gap-2">
+  📋 Student List
+
+  <input 
+    type="text" 
+    id="studentSearch"
+    class="form-control w-50 ms-lg-5"
+    placeholder="Search by Roll No, Name or Course..."
+  >
+
+<div class="btn-group ms-auto" role="group" aria-label="Student filters">
+  <button class="btn btn-outline-warning btn-sm" id="toggleWithBooks" type="button">
+    <i class="bi bi-journal-bookmark"></i> With Books: OFF
+  </button>
+
+  <button class="btn btn-outline-secondary btn-sm" id="toggleWithoutBooks" type="button">
+    <i class="bi bi-person-dash"></i> Without Books: OFF
+  </button>
+
+  <!-- ✅ ADD THIS -->
+<button class="btn btn-outline-danger btn-sm" id="toggleOverdueBooks" type="button" style="display:none;">
+  <i class="bi bi-exclamation-triangle"></i> Overdue: OFF
+</button>
+
+</div>
+
+
+</div>
+
+
+    <div class="card-body">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Roll No</th>
+            <th>Student Name</th>
+            <th>Email</th>
+            <th>Mobile</th>
+            <th>Course</th>
+             <th class="text-center">Books Issued</th>
+            <th class="text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody id="studentTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add Student Modal -->
+  <div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+
+        <!-- Modal Header -->
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="studentModalTitle">
+            <i class="bi bi-person-plus"></i> Add New Student
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="modal-body">
+          <form id="studentForm">
+            <div class="row g-3">
+
+              <div class="col-md-6">
+                <label class="form-label">Roll No</label>
+                <input type="number" class="form-control" id="rollNo" required min="1">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Student Name</label>
+                <input type="text" class="form-control" id="studentName" required pattern="[A-Za-z\s]+" title="Only letters allowed">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" required>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Mobile No</label>
+                <input type="tel" class="form-control" id="mobile" required pattern="[0-9]{10}" maxlength="10" title="Enter 10 digit mobile number">
+              </div>
+
+              <div class="col-md-12">
+                <label class="form-label">Course</label>
+                <select class="form-select" id="course" required>
+                  <option value="">Select Course</option>
+                  <option>BCA</option>
+                  <option>BCS</option>
+                  <option>MCA</option>
+                  <option>B.Com</option>
+                  <option>B.Science</option>
+                  <option>B.Commerce</option>
+                </select>
+              </div>
+
+            </div>
+          </form>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" id="addStudentBtn">
+            <i class="bi bi-check-circle"></i> Add Student
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW STUDENT MODAL -->
+  <div class="modal fade" id="viewStudentModal" tabindex="-1" aria-labelledby="viewStudentLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title" id="viewStudentLabel">Student Details</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4"><strong>Roll No:</strong> <span id="viewRollNo"></span></div>
+                <div class="col-md-4"><strong>Name:</strong> <span id="viewName"></span></div>
+                <div class="col-md-4"><strong>Email:</strong> <span id="viewEmail"></span></div>
+              </div>
+              <div class="row mt-2">
+                <div class="col-md-4"><strong>Mobile:</strong> <span id="viewMobile"></span></div>
+                <div class="col-md-4"><strong>Course:</strong> <span id="viewCourse"></span></div>
+              </div>
+            </div>
+          </div>
+          <!-- Issued Books Section -->
+<div class="card shadow-sm">
+  <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+    📚 Issued Books
+    <span class="badge bg-primary" id="issuedCount">0</span>
+  </div>
+
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover mb-0">
+        <thead class="table-secondary">
+          <tr>
+            <th>#</th>
+            <th>Book ID</th>
+            <th>Book Name</th>
+            <th>Issue Date</th>
+            <th>Loan Days</th>
+            <th>Due Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="viewIssuedTbody">
+          <!-- JS will fill -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>

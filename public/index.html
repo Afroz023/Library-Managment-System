@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.css">
+    <link rel="stylesheet" href="../node_modules/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../src/style.css">
+    <script src="../node_modules/jquery/dist/jquery.js"></script>
+    <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.js"></script>
+    
+    <script>
+
+      let studentsCache = [];
+      let filterWithBooks = false;
+      let filterWithoutBooks = false;
+      let filterOverdueBooks = false;
+
+
+  $(function () {
+
+    // ================= SIDEBAR NAV =================
+    $("#btnDashboard").click(function () {
+      $.ajax({ method: "GET", url: "dashboard.html" })
+        .then(function (res) {
+          $("#section").html(res);
+          loadDashboardCounts();
+          loadStudentCounts();
+        });
+    });
+
+    $("#btnBook").click(function () {
+      $.ajax({ method: "GET", url: "book.html" })
+        .then(function (res) {
+          $("#section").html(res);
+          fetchBooks();
+        });
+    });
+
+    $("#btnStudent").click(function () {
+      $.ajax({ method: "GET", url: "student.html" })
+        .then(function (res) {
+          $("#section").html(res);
+          loadStudents();
+          loadStudentCounts();
+        });
+    });
+
+    $("#btnIssue").click(function () {
+      $.ajax({ method: "GET", url: "issue.html" })
+        .then(function (res) { $("#section").html(res); 
+            resetIssueUI();
+            fetchBooks();
+        });
+    });
+
+    $("#btnReport").click(function () {
+      $.ajax({ method: "GET", url: "report.html" })
+        .then(function (res) { $("#section").html(res); });
+    });
+
+    // ================= LOGOUT =================
+    $("#logout").on("click", function () {
+      alert("Logout Successful");
+      window.location.href = "login.html";
+    });
+
+    // ================= BOOKS (KEEP AS-IS) =================
+    let allBooks = [];
+
+    function fetchBooks() {
+      $.ajax({ method: "GET", url: "http://127.0.0.1:2200/getbooks" })
+        .done(function (data) {
+          allBooks = data;
+          renderBooks(allBooks);
+        })
+        .fail(function () {
+          alert("Failed to load books ❌");
+        });
+    }
+
+    function renderBooks(books) {
+      $("#tbody").empty();
+      if (!books || books.length === 0) {
+        $("#tbody").append(`
+          <tr><td colspan="7" class="text-center text-danger">No books found</td></tr>
+        `);
+        return;
+      }
+
+      books.forEach(book => {
+        $("#tbody").append(`
+          <tr>
+            <td>${book.id}</td>
+            <td>${book.title}</td>
+            <td>${book.author}</td>
+            <td>${book.category}</td>
+            <td>${book.quantity}</td>
+            <td>
+              <span class="badge ${book.status === "Available" ? "bg-success" : "bg-danger"}">
+                ${book.status}
+              </span>
+            </td>
+            <td class="d-flex">
+              <button class="btn btn-sm btn-warning me-1"
+                onclick="editBook(
+                  ${book.id},
+                  '${escapeQuotes(book.title)}',
+                  '${escapeQuotes(book.author)}',
+                  '${escapeQuotes(book.category)}',
+                  ${book.quantity},
+                  '${escapeQuotes(book.status)}'
+                )">
+                <i class="bi bi-pencil"></i>
+              </button>
+
+              <button class="btn btn-sm btn-danger delete-btn" data-id="${book.id}">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `);
+      });
+    }
+
+    function escapeQuotes(s) {
+      return String(s ?? "").replace(/'/g, "\\'");
+    }
+
+    function deleteBook(bookId) {
+      if (!confirm("Are you sure you want to delete this book?")) return;
+
+      $.ajax({ method: "DELETE", url: "http://127.0.0.1:2200/deletebook/" + bookId })
+        .then(function (res) {
+          alert(res);
+          fetchBooks();
+        })
+        .catch(function () {
+          alert("Error deleting book");
+        });
+    }
+
+    $(document).on("click", ".delete-btn", function () {
+      deleteBook($(this).data("id"));
+    });
+
+    $(document).on("submit", "#bookForm", function (e) {
+      e.preventDefault();
+
+      let bookId = $("#bookId").val().trim();
+      if (!/^\d+$/.test(bookId)) {
+        alert("Book ID must contain only numbers");
+        return;
+      }
+
+      let book = {
+        id: Number(bookId),
+        title: $("#title").val(),
+        author: $("#author").val(),
+        category: $("#category").val(),
+        quantity: parseInt($("#quantity").val(), 10),
+        status: $("#status").is(":checked") ? "Available" : "Not Available"
+      };
+
+      let isUpdate = $("#updateBtn").length > 0;
+
+      $.ajax({
+        method: isUpdate ? "PUT" : "POST",
+        url: isUpdate
+          ? "http://127.0.0.1:2200/updatebook/" + book.id
+          : "http://127.0.0.1:2200/addbook",
+        data: JSON.stringify(book),
+        contentType: "application/json"
+      })
+        .done(function (res) {
+          alert(res);
+          $("#bookForm")[0].reset();
+          $("#bookId").prop("readonly", false);
+          $("#updateBtn")
+            .text("Save Book")
+            .removeClass("btn-warning")
+            .addClass("btn-success")
+            .removeAttr("id");
+          fetchBooks();
+        })
+        .fail(function (xhr) {
+          alert(xhr.responseText);
+        });
+    });
+
+    $(document).on("keyup", "#bookSearch", function () {
+      let keyword = $(this).val().toLowerCase();
+      let filteredBooks = allBooks.filter(book =>
+        String(book.title).toLowerCase().includes(keyword) ||
+        String(book.author).toLowerCase().includes(keyword) ||
+        String(book.category).toLowerCase().includes(keyword) ||
+        String(book.id).includes(keyword)
+      );
+      renderBooks(filteredBooks);
+    });
+
+    // ================= STUDENTS (NEW SIMPLE VERSION) =================
+
+    $(document).on("click", "#openAddStudentModal", function () {
+      resetStudentModal();
+      let modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("addStudentModal"));
+      modal.show();
+    });
+
+    $(document).on("click", "#addStudentBtn", function () {
+      let student = getStudentFromForm();
+      if (!student) return;
+
+      $.ajax({
+        method: "POST",
+        url: "http://127.0.0.1:2200/addstudent",
+        contentType: "application/json",
+        data: JSON.stringify(student)
+      })
+        .done(function (res) {
+          alert(res);
+
+          let modal = bootstrap.Modal.getInstance(document.getElementById("addStudentModal"));
+          if (modal) modal.hide();
+
+          resetStudentModal();
+          loadStudents();
+          loadStudentCounts();
+        })
+        .fail(function (xhr) {
+          alert(xhr.responseText || "Operation failed ❌");
+        });
+    });
+
+    $(document).on("click", ".delete-student-btn", function () {
+      let rollNo = $(this).data("roll");
+      let course = $(this).data("course");
+      if (!confirm("Are you sure you want to delete this student?")) return;
+
+      $.ajax({
+        method: "DELETE",
+        url: `http://127.0.0.1:2200/deletestudent/${rollNo}/${course}`
+      })
+        .done(function (res) {
+          alert(res);
+          loadStudents();
+          loadStudentCounts();
+        })
+        .fail(function (xhr) {
+          alert(xhr.responseText || "Delete failed ❌");
+        });
+    });
+
+   // VIEW STUDENT + ISSUED BOOKS (FETCH FROM API)
+$(document).on("click", ".view-student-btn", function () {
+  const rollNo = $(this).data("roll");
+
+  // Clear UI first
+  $("#viewRollNo").text("");
+  $("#viewName").text("");
+  $("#viewEmail").text("");
+  $("#viewMobile").text("");
+  $("#viewCourse").text("");
+
+  $("#issuedCount").text("0");
+  $("#viewIssuedTbody").empty().append(`
+    <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+  `);
+
+  $.ajax({
+    method: "GET",
+    url: `http://127.0.0.1:2200/getstudent/${rollNo}`
+  })
+    .done(function (student) {
+      // Basic info
+      $("#viewRollNo").text(student.rollNo ?? "-");
+      $("#viewName").text(student.name ?? "-");
+      $("#viewEmail").text(student.email ?? "-");
+      $("#viewMobile").text(student.mobile ?? "-");
+      $("#viewCourse").text(student.course ?? "-");
+
+      // Issued books
+      const issued = Array.isArray(student.issuedBooks) ? student.issuedBooks : [];
+      $("#issuedCount").text(issued.length);
+      const tbody = $("#viewIssuedTbody").empty();
+
+      if (issued.length === 0) {
+        tbody.append(`<tr><td colspan="6" class="text-center">No books issued</td></tr>`);
+      } else {
+        issued.forEach((b, i) => {
+  const overdueClass = isOverdueBook(b) ? "overdue-book" : "";
+
+  tbody.append(`
+    <tr class="${overdueClass}">
+      <td>${i + 1}</td>
+      <td>${b.bookId ?? "-"}</td>
+      <td>${b.bookName ?? "-"}</td>
+      <td>${b.issueDate ?? "-"}</td>
+      <td>${b.loanDays ?? "-"}</td>
+      <td>${b.dueDate ?? "-"}</td>
+      <td class="text-center">
+        <button class="btn btn-sm btn-outline-success return-book-btn"
+          data-roll="${student.rollNo}"
+          data-bookid="${b.bookId}">
+          <i class="bi bi-arrow-return-left"></i>
+        </button>
+      </td>
+    </tr>
+  `);
+
+});
+
+      }
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById("viewStudentModal")).show();
+    })
+    .fail(function (xhr) {
+      $("#viewIssuedTbody").empty().append(`
+      <tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>
+      `);
+      alert(xhr.responseText || "Failed to fetch student ❌");
+    });
+});
+
+// ✅ RETURN BOOK BUTTON HANDLER (paste just after view-student-btn handler)
+$(document).on("click", ".return-book-btn", function () {
+  const rollNo = Number($(this).data("roll"));
+  const bookId = Number($(this).data("bookid"));
+
+  if (!confirm(`Return Book ID ${bookId}?`)) return;
+
+  $.ajax({
+    method: "POST",
+    url: "http://127.0.0.1:2200/returnbook",
+    contentType: "application/json",
+    data: JSON.stringify({ rollNo, bookId })
+  })
+    .done(function (res) {
+      alert(res);
+
+      // 🔁 refresh modal by triggering view again
+      $(`.view-student-btn[data-roll="${rollNo}"]`).trigger("click");
+
+      // optional: refresh books list if you want qty/status updated
+      loadStudents();
+      fetchBooks();
+      loadStudentCounts();
+    })
+    .fail(function (xhr) {
+      alert(xhr.responseText || "Return failed ❌");
+    });
+});
+
+
+    function resetStudentModal() {
+      $("#studentForm")[0].reset();
+      $("#studentModalTitle").html('<i class="bi bi-person-plus"></i> Add New Student');
+    }
+
+    $('#addStudentModal').on('hidden.bs.modal', function () {
+      resetStudentModal();
+      $('body').removeClass('modal-open');
+      $('body').css('overflow', '');
+      $('.modal-backdrop').remove();
+    });
+
+    function getStudentFromForm() {
+      let rollNo = $("#rollNo").val().trim();
+      let name = $("#studentName").val().trim();
+      let email = $("#email").val().trim();
+      let mobile = $("#mobile").val().trim();
+      let course = $("#course").val();
+
+      if (!rollNo || isNaN(rollNo)) { alert("Enter valid Roll No"); return null; }
+      if (!name || !/^[A-Za-z\s]+$/.test(name)) { alert("Enter valid Name"); return null; }
+      if (!email || !email.endsWith("@gmail.com")) { alert("Enter valid Gmail"); return null; }
+      if (!mobile || !/^\d{10}$/.test(mobile)) { alert("Enter valid mobile"); return null; }
+      if (!course) { alert("Select course"); return null; }
+
+      return {
+        rollNo: Number(rollNo),
+        name,
+        email,
+        mobile,
+        course
+      };
+    }
+
+  // STUDENT SEARCH
+  $(document).on("keyup", "#studentSearch", function () {
+    applyStudentFilters();
+  });
+
+
+    function renderCourseOptions(selected) {
+  const courses = ["BCA", "BCS", "MCA", "B.Com", "B.Science", "B.Commerce"];
+  return `
+    <option value="">Select Course</option>
+    ${courses.map(c => `<option ${c === selected ? "selected" : ""}>${c}</option>`).join("")}
+  `;
+}
+
+function validateStudentPayload(student) {
+  if (!student.rollNo || isNaN(student.rollNo)) return "Enter valid Roll No";
+  if (!student.name || !/^[A-Za-z\s]+$/.test(student.name)) return "Enter valid Name";
+  if (!student.email || !student.email.endsWith("@gmail.com")) return "Enter valid Gmail";
+  if (!student.mobile || !/^\d{10}$/.test(student.mobile)) return "Enter valid mobile";
+  if (!student.course) return "Select course";
+  return null;
+}
+
+function enterInlineEditMode($tr) {
+  const student = $tr.data("student"); // original student object
+
+  $tr.data("editing", true);
+  $tr.data("orig", { rollNo: student.rollNo, course: student.course });
+
+  // Replace cells with inputs
+  $tr.find("td:eq(0)").html(`<input type="number" class="form-control form-control-sm edit-roll" value="${student.rollNo}" min="1">`);
+  $tr.find("td:eq(1)").html(`<input type="text" class="form-control form-control-sm edit-name" value="${student.name}">`);
+  $tr.find("td:eq(2)").html(`<input type="email" class="form-control form-control-sm edit-email" value="${student.email}">`);
+  $tr.find("td:eq(3)").html(`<input type="tel" class="form-control form-control-sm edit-mobile" value="${student.mobile}" maxlength="10">`);
+  $tr.find("td:eq(4)").html(`
+    <select class="form-select form-select-sm edit-course">
+      ${renderCourseOptions(student.course)}
+    </select>
+  `);
+
+  // Change edit button to save
+  const $btn = $tr.find(".edit-student-inline-btn");
+  $btn.removeClass("btn-warning").addClass("btn-success");
+  $btn.find("i").removeClass("bi-pencil").addClass("bi-check2-circle");
+}
+
+function readInlineEditRow($tr) {
+  return {
+    rollNo: Number($tr.find(".edit-roll").val()),
+    name: String($tr.find(".edit-name").val() || "").trim(),
+    email: String($tr.find(".edit-email").val() || "").trim(),
+    mobile: String($tr.find(".edit-mobile").val() || "").trim(),
+    course: String($tr.find(".edit-course").val() || "").trim()
+  };
+}
+
+// ✅ Inline Edit/Save handler
+$(document).on("click", ".edit-student-inline-btn", function () {
+  const $tr = $(this).closest("tr");
+  const isEditing = $tr.data("editing") === true;
+
+  if (!isEditing) {
+    enterInlineEditMode($tr);
+    return;
+  }
+
+  // Save
+  const payload = readInlineEditRow($tr);
+  const err = validateStudentPayload(payload);
+  if (err) {
+    alert(err);
+    return;
+  }
+
+  const orig = $tr.data("orig"); // {rollNo, course}
+
+  $.ajax({
+    method: "PUT",
+    url: `http://127.0.0.1:2200/updatestudent/${orig.rollNo}/${encodeURIComponent(orig.course)}`,
+    contentType: "application/json",
+    data: JSON.stringify(payload)
+  })
+    .done(function (res) {
+      alert(res);
+      loadStudents();
+      loadStudentCounts();
+    })
+    .fail(function (xhr) {
+      alert(xhr.responseText || "Update failed ❌");
+    });
+});
+   
+//issue book 
+function todayISODate() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+
+}
+
+function addDaysISO(isoDate, days) {
+  const d = new Date(isoDate + "T00:00:00");
+  d.setDate(d.getDate() + Number(days));
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function isOverdueIssue(b) {
+  if (!b || !b.dueDate) return false;
+  const today = todayISODate();
+  return String(b.dueDate) < String(today); // yyyy-mm-dd compare works
+}
+
+function studentHasOverdue(student) {
+  const issued = Array.isArray(student.issuedBooks) ? student.issuedBooks : [];
+  return issued.some(isOverdueIssue);
+}
+
+
+function refreshDueDate() {
+  const issueDate = $("#issueDate").val() || todayISODate();
+  const loanDays  = Number($("#loanDays").val()) || 7;
+  $("#issueDate").val(issueDate);
+  $("#dueDate").val(addDaysISO(issueDate, loanDays));
+}
+
+
+function resetIssueUI() {
+  $("#issueRollNo").val("");
+  $("#issueStudentName").val("");
+  $("#issueCourse").val("");
+
+  $("#issueBookId").val("");
+  $("#issueBookName").val("");
+  $("#bookQty").val("");
+
+  $("#issueDate").val(todayISODate());
+  $("#loanDays").val("7");      // ✅ default 7
+  refreshDueDate();
+}
+
+// whenever loan days changes
+$(document).on("change", "#loanDays", function () {
+  refreshDueDate();
+});
+
+// When issue page loads, auto-set today
+$(document).on("focus", "#issueRollNo, #issueBookId", function () {
+  if (!$("#issueDate").val()) $("#issueDate").val(todayISODate());
+});
+
+// Auto fetch student by rollNo
+$(document).on("input", "#issueRollNo", function () {
+  const rollNo = $(this).val().trim();
+
+  $("#issueStudentName").val("");
+  $("#issueCourse").val("");
+
+  if (!rollNo) return;
+
+  $.ajax({
+    method: "GET",
+    url: `http://127.0.0.1:2200/getstudent/${rollNo}`
+  })
+    .done(function (student) {
+      $("#issueStudentName").val(student.name);
+      $("#issueCourse").val(student.course);
+    })
+    .fail(function (xhr) {
+      $("#issueStudentName").val("");
+      $("#issueCourse").val("");
+      if (xhr.status === 404) return;
+      alert(xhr.responseText || "Failed to fetch student ❌");
+    });
+});
+
+// Auto fetch book by id
+$(document).on("input", "#issueBookId", function () {
+  const bookId = $(this).val().trim();
+
+  $("#issueBookName").val("");
+  $("#bookQty").val("");
+
+  if (!bookId) return;
+
+  $.ajax({
+    method: "GET",
+    url: `http://127.0.0.1:2200/getbook/${bookId}`
+  })
+    .done(function (book) {
+      $("#issueBookName").val(book.title);
+      $("#bookQty").val(book.quantity);
+    })
+    .fail(function (xhr) {
+      $("#issueBookName").val("");
+      $("#bookQty").val("");
+      if (xhr.status === 404) return;
+      alert(xhr.responseText || "Failed to fetch book ❌");
+    });
+});
+
+// Reset button
+$(document).on("click", "#resetIssueForm", function () {
+  resetIssueUI();
+});
+
+// Issue Book
+$(document).on("click", "#issueBookBtn", function () {
+  const rollNo = Number($("#issueRollNo").val());
+  const bookId = Number($("#issueBookId").val());
+  const issueDate = todayISODate(); // force today
+
+  const loanDays = Number($("#loanDays").val());   // ✅ dropdown se
+  const dueDate  = $("#dueDate").val();            // ✅ auto computed
+
+  if (!rollNo || isNaN(rollNo)) return alert("Enter valid Roll No");
+  if (!bookId || isNaN(bookId)) return alert("Enter valid Book ID");
+
+  if (!$("#issueStudentName").val().trim() || !$("#issueCourse").val().trim()) {
+    return alert("Student not found ❌");
+  }
+  if (!$("#issueBookName").val().trim()) {
+    return alert("Book not found ❌");
+  }
+
+  $.ajax({
+    method: "POST",
+    url: "http://127.0.0.1:2200/issuebook",
+    contentType: "application/json",
+    data: JSON.stringify({ rollNo, bookId, issueDate, loanDays, dueDate  })
+  })
+    .done(function (res) {
+      alert(res);
+      resetIssueUI();
+      fetchBooks();
+      loadStudentCounts(); 
+    })
+    .fail(function (xhr) {
+      alert(xhr.responseText || "Issue failed ❌");
+    });
+});
+
+// ================= STUDENT FILTER TOGGLES =================
+
+$(document).on("click", "#toggleWithBooks", function () {
+  filterWithBooks = !filterWithBooks;
+
+  if (filterWithBooks) {
+    filterWithoutBooks = false;
+    filterOverdueBooks = false;  // ✅ FIX
+  }
+
+  applyStudentFilters();
+});
+
+$(document).on("click", "#toggleWithoutBooks", function () {
+  filterWithoutBooks = !filterWithoutBooks;
+
+  if (filterWithoutBooks) {
+    filterWithBooks = false;
+    filterOverdueBooks = false;  // ✅ FIX
+  }
+
+  applyStudentFilters();
+});
+
+
+// ✅ NEW Overdue toggle
+$(document).on("click", "#toggleOverdueBooks", function () {
+  filterOverdueBooks = !filterOverdueBooks;
+
+  if (filterOverdueBooks) {
+    filterWithBooks = false;
+    filterWithoutBooks = false;
+  }
+
+  applyStudentFilters();
+});
+
+
+// Search works with filters
+$(document).on("keyup", "#studentSearch", function () {
+  applyStudentFilters();
+});
+
+
+// ✅ AUTO LOAD DASHBOARD ON FIRST PAGE LOAD
+$.ajax({ method: "GET", url: "dashboard.html" })
+  .then(function (res) {
+    $("#section").html(res);
+    loadDashboardCounts();
+    loadStudentCounts();
+  });
+
+
+// ================= MOBILE HAMBURGER =================
+const $leftPanel = $("#leftPanel");
+const $overlay   = $("#overlay");
+const $btnMenu   = $("#btnMenu");
+
+function openMenu() {
+  $leftPanel.addClass("open");
+  $overlay.addClass("show");
+  $("body").addClass("no-scroll");
+}
+
+function closeMenu() {
+  $leftPanel.removeClass("open");
+  $overlay.removeClass("show");
+  $("body").removeClass("no-scroll");
+}
+
+$btnMenu.on("click", openMenu);
+$overlay.on("click", closeMenu);
+
+// mobile pe nav click -> close
+$("#navbar").on("click", "button", function () {
+  if (window.innerWidth <= 768) closeMenu();
+});
+
+// resize to desktop -> auto close
+$(window).on("resize", function () {
+  if (window.innerWidth > 768) closeMenu();
+});
+
+
+  }); // end $(function)
+
+  // ================= OUTSIDE READY (GLOBAL FUNCTIONS) =================
+
+  
+ function studentHasBooks(student) {
+  const issuedLen = Array.isArray(student.issuedBooks) ? student.issuedBooks.length : 0;
+  const legacyIssued = Number(student.booksIssued || 0);
+  return issuedLen > 0 || legacyIssued > 0;
+}
+
+function getIssuedCount(student) {
+  const issuedLen = Array.isArray(student.issuedBooks) ? student.issuedBooks.length : 0;
+  const legacyIssued = Number(student.booksIssued || 0); // optional if old data exists
+  return issuedLen > 0 ? issuedLen : legacyIssued;
+}
+
+function renderStudentsTable(students) {
+  $("#studentTbody").empty();
+
+  (students || []).forEach(function (student) {
+    const issuedCount = getIssuedCount(student);
+
+    const $row = $(`
+      <tr>
+        <td>${student.rollNo}</td>
+        <td>${student.name}</td>
+        <td>${student.email}</td>
+        <td>${student.mobile}</td>
+        <td>${student.course}</td>
+
+        <!-- ✅ NEW (readonly always) -->
+        <td class="text-center fw-semibold">${issuedCount}</td>
+
+        <td class="text-center">
+          <button class="btn btn-sm btn-info text-white view-student-btn"
+            data-roll="${student.rollNo}">
+            <i class="bi bi-eye"></i>
+          </button>
+
+          <button class="btn btn-sm btn-warning text-white edit-student-inline-btn ms-1">
+            <i class="bi bi-pencil"></i>
+          </button>
+
+          <button class="btn btn-sm btn-danger delete-student-btn ms-1"
+            data-roll="${student.rollNo}"
+            data-course="${student.course}">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `);
+
+    $row.data("student", student);
+    $("#studentTbody").append($row);
+  });
+
+  $("#studentTbody").append(`
+    <tr id="noStudentRow" class="d-none">
+      <td colspan="7" class="text-center text-danger fw-semibold">❌ Student not found</td>
+    </tr>
+  `);
+}
+
+
+function applyStudentFilters() {
+  const q = String($("#studentSearch").val() || "").toLowerCase().trim();
+  let list = studentsCache.slice();
+
+  // ✅ Mutually exclusive filters (priority)
+  if (filterOverdueBooks) list = list.filter(studentHasOverdue);
+  else if (filterWithBooks) list = list.filter(studentHasBooks);
+  else if (filterWithoutBooks) list = list.filter(s => !studentHasBooks(s));
+
+  if (q) {
+    list = list.filter(s =>
+      String(s.rollNo).toLowerCase().includes(q) ||
+      String(s.name).toLowerCase().includes(q) ||
+      String(s.course).toLowerCase().includes(q)
+    );
+  }
+
+  renderStudentsTable(list);
+
+  if (!list.length) $("#noStudentRow").removeClass("d-none");
+  else $("#noStudentRow").addClass("d-none");
+
+  updateFilterButtonsUI(); // ✅ update button labels + hide/show
+}
+
+
+function updateFilterButtonsUI() {
+  $("#toggleWithBooks")
+    .html(`<i class="bi bi-journal-bookmark"></i> With Books: ${filterWithBooks ? "ON" : "OFF"}`)
+    .toggleClass("btn-warning text-white", filterWithBooks)
+    .toggleClass("btn-outline-warning", !filterWithBooks);
+
+  $("#toggleWithoutBooks")
+    .html(`<i class="bi bi-person-dash"></i> Without Books: ${filterWithoutBooks ? "ON" : "OFF"}`)
+    .toggleClass("btn-secondary text-white", filterWithoutBooks)
+    .toggleClass("btn-outline-secondary", !filterWithoutBooks);
+
+  const overdueCount = (studentsCache || []).filter(studentHasOverdue).length;
+
+  if (overdueCount > 0) {
+    $("#toggleOverdueBooks").show();
+  } else {
+    // ✅ no overdue => hide + force OFF
+    filterOverdueBooks = false;
+    $("#toggleOverdueBooks").hide();
+  }
+
+  $("#toggleOverdueBooks")
+    .html(`<i class="bi bi-exclamation-triangle"></i> Overdue: ${filterOverdueBooks ? "ON" : "OFF"} (${overdueCount})`)
+    .toggleClass("btn-danger text-white", filterOverdueBooks)
+    .toggleClass("btn-outline-danger", !filterOverdueBooks);
+}
+
+function isOverdueBook(book) {
+  if (!book || !book.dueDate) return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(String(book.dueDate) + "T00:00:00");
+  return due < today;
+}
+
+
+function loadStudents() {
+  $.ajax({
+    method: "GET",
+    url: "http://127.0.0.1:2200/getstudents"
+  })
+    .then(function (data) {
+      studentsCache = data || [];
+      updateFilterButtonsUI();
+      applyStudentFilters();
+    })
+    .catch(function () {
+      alert("Failed to load students ❌");
+    });
+}
+
+
+function loadStudentCounts() {
+  $.ajax({
+    method: "GET",
+    url: "http://127.0.0.1:2200/getstudents"
+  })
+  .then(function (data) {
+    const students = data || [];
+
+    $("#totalStudents").text(students.length);
+
+    let studentsWithBooks = 0;
+    let totalIssuedBooks = 0;
+    let overdueBooks = 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    students.forEach(s => {
+      const issued = Array.isArray(s.issuedBooks) ? s.issuedBooks : [];
+      const legacyIssued = Number(s.booksIssued || 0);
+
+      const count = issued.length > 0 ? issued.length : legacyIssued;
+
+      if (count > 0) studentsWithBooks++;
+      totalIssuedBooks += count;
+
+      // ✅ overdue count (only if dueDate exists)
+      issued.forEach(b => {
+        if (!b.dueDate) return;
+        const due = new Date(String(b.dueDate) + "T00:00:00");
+        if (!isNaN(due) && due < today) overdueBooks++;
+      });
+    });
+
+    $("#studentsWithBooks").text(studentsWithBooks);
+    $("#totalIssuedBooks").text(totalIssuedBooks);
+    $("#overdueBooksCount").text(overdueBooks);
+  })
+  .catch(function () {
+    $("#totalStudents").text("Error");
+    $("#studentsWithBooks").text("Error");
+    $("#totalIssuedBooks").text("Error");
+    $("#overdueBooksCount").text("Error");
+  });
+}
+
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function parseISODate(iso) {
+  if (!iso) return null;
+  const d = new Date(String(iso).slice(0, 10) + "T00:00:00");
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// ✅ true if student has ANY overdue issued book
+function studentHasOverdue(student) {
+  const issued = Array.isArray(student.issuedBooks) ? student.issuedBooks : [];
+  if (!issued.length) return false;
+
+  const today = startOfToday();
+
+  return issued.some(b => {
+    const due = parseISODate(b.dueDate);
+    return due && due < today;   // dueDate < today => overdue
+  });
+}
+
+  function formatPretty(iso) {
+    const d = parseISODate(iso);
+    if (!d) return "-";
+    return d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  function isOverdue(issuedItem) {
+    const due = parseISODate(issuedItem?.dueDate);
+    if (!due) return false;
+    return due < startOfToday();
+  }
+
+  // ✅ REPLACE your existing loadDashboardCounts() with this
+  function loadDashboardCounts() {
+    // Total Books
+    $.ajax({ method: "GET", url: "http://127.0.0.1:2200/getbooks" })
+      .then(function (books) {
+        $("#totalBooks").text((books || []).length);
+      })
+      .catch(function () {
+        $("#totalBooks").text("Error");
+      });
+
+    // Students + Issued + Overdue + Recent Issued Table
+    $.ajax({ method: "GET", url: "http://127.0.0.1:2200/getstudents" })
+      .then(function (students) {
+        students = students || [];
+
+        // ✅ Registered Students
+        $("#totalStudents").text(students.length);
+
+        // ✅ Issued Books (sum of issuedBooks length; legacy booksIssued optional)
+        let issuedCount = 0;
+        let overdueCount = 0;
+
+        const flattened = []; // for recent table
+
+        students.forEach((s) => {
+          const issued = Array.isArray(s.issuedBooks) ? s.issuedBooks : [];
+
+          issuedCount += issued.length;
+
+          issued.forEach((b) => {
+            if (isOverdue(b)) overdueCount++;
+
+            flattened.push({
+              studentName: s.name || "-",
+              rollNo: s.rollNo ?? "-",
+              course: s.course || "-",
+              bookName: b.bookName || "-",
+              issueDate: b.issueDate || "",
+              dueDate: b.dueDate || "",
+              overdue: isOverdue(b)
+            });
+          });
+        });
+
+        $("#issuedBooksCount").text(issuedCount);
+        $("#overdueBooksCount").text(overdueCount);
+
+        // ✅ Recent issued (latest by issueDate, fallback dueDate)
+        flattened.sort((a, b) => {
+          const da = parseISODate(a.issueDate) || parseISODate(a.dueDate) || new Date(0);
+          const db = parseISODate(b.issueDate) || parseISODate(b.dueDate) || new Date(0);
+          return db - da;
+        });
+
+        const top = flattened.slice(0, 5);
+        const $tb = $("#recentIssuedTbody").empty();
+
+        if (!top.length) {
+          $tb.append(`<tr><td colspan="5" class="text-center">No issued books</td></tr>`);
+          return;
+        }
+
+        top.forEach((x) => {
+          const badge = x.overdue
+            ? `<span class="badge bg-danger">Overdue</span>`
+            : `<span class="badge bg-success">Issued</span>`;
+
+          $tb.append(`
+            <tr>
+              <td>${x.studentName} (${x.rollNo})</td>
+              <td>${x.bookName}</td>
+              <td>${formatPretty(x.issueDate)}</td>
+              <td>${formatPretty(x.dueDate)}</td>
+              <td>${badge}</td>
+            </tr>
+          `);
+        });
+      })
+      .catch(function () {
+        $("#totalStudents").text("Error");
+        $("#issuedBooksCount").text("Error");
+        $("#overdueBooksCount").text("Error");
+        $("#recentIssuedTbody").html(`<tr><td colspan="5" class="text-center text-danger">Failed to load</td></tr>`);
+      });
+  }
+
+
+
+  // ✅ GLOBAL FUNCTION (KEEP)
+  function editBook(id, title, author, category, quantity, status) {
+    id = Number(id);
+    $("#bookId").val(id).prop("readonly", true);
+    $("#title").val(title);
+    $("#author").val(author);
+    $("#category").val(category);
+    $("#quantity").val(quantity);
+    $("#status").prop("checked", status === "Available");
+    $("#bookForm button[type='submit']")
+      .text("Update Book")
+      .removeClass("btn-success")
+      .addClass("btn-warning")
+      .attr("id", "updateBtn");
+  }
+
+</script>
+        
+    <style>
+
+    </style>
+</head>
+<body class="container-fluid g-0">
+
+  <!-- ✅ Mobile Overlay -->
+  <div id="overlay" class="overlay"></div>
+
+  <div class="row g-0 app-shell">
+
+    <!-- ✅ Sidebar -->
+    <aside class="col-2 mt-1" id="leftPanel">
+      <div class="sidebar-header">
+        <h3 class="text-danger-emphasis mb-0 d-flex align-items-center gap-2">
+          <span class="bi bi-journal-bookmark-fill"></span>
+          Library Managment
+        </h3>
+      </div>
+      <hr>
+
+      <div id="navbar">
+        <div><button id="btnDashboard" class="w-100 mt-2 btn btn-outline-primary">
+          <span class="bi bi-house me-1"></span> Dashboard</button></div>
+
+        <div><button id="btnBook" class="w-100 mt-2 btn btn-outline-primary">
+          <span class="bi bi-book me-1"></span> Books</button></div>
+
+        <div><button id="btnStudent" class="w-100 mt-2 btn btn-outline-primary">
+          <span class="bi bi-person-lines-fill me-1"></span> Students</button></div>
+
+        <div><button id="btnIssue" class="w-100 mt-2 btn btn-outline-primary">
+          <span class="bi bi-envelope-paper me-1"></span> Issued</button></div>
+
+        <div><button id="btnReport" class="w-100 mt-2 btn btn-outline-primary">
+          <span class="bi bi-postcard me-1"></span> Reports</button></div>
+      </div>
+    </aside>
+
+    <!-- ✅ Right Panel -->
+    <main class="col-10" id="rightPanel">
+
+      <!-- ✅ Header -->
+      <header class="d-flex justify-content-between mt-1">
+
+        <!-- Left: Hamburger + Title -->
+        <div class="d-flex align-items-center gap-2">
+          <!-- ✅ Hamburger (mobile only) -->
+          <button id="btnMenu" type="button" class="btn btn-outline-primary d-md-none">
+            <span class="bi bi-list"></span>
+          </button>
+
+          <h2 class="text-danger-emphasis m-0 d-flex align-items-center gap-2">
+            <span class="bi bi-building"></span>
+            Admin Panel
+          </h2>
+        </div>
+
+        <!-- Right -->
+        <div class="d-flex">
+          <div>
+            <button class="btn btn-outline-info me-2">
+              <span class="bi bi-person text-primary"></span> Admin One
+            </button>
+          </div>
+          <div>
+            <button class="w-100 btn btn-outline-danger" id="logout">
+              <span class="bi bi-box-arrow-right me-2"></span> Logout
+            </button>
+          </div>
+        </div>
+
+      </header>
+
+      <section id="section" class="mt-3"></section>
+    </main>
+
+  </div>
+
+</body>
+</html>

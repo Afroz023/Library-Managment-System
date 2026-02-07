@@ -1,0 +1,91 @@
+<div class="container mt-4">
+
+    <!-- Page Title -->
+    <div class="row mb-3">
+        <div class="col">
+            <h3 class="fw-bold">📘 Book Management</h3>
+            <p class="text-muted">Add, View, Update and Delete Books</p>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <!-- Add Book Form -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <i class="bi bi-plus-circle"></i> Add New Book
+                </div>
+                <div class="card-body">
+                    <form id="bookForm">
+                        <div class="mb-2">
+                            <label class="form-label">Book ID</label>
+                            <input type="number" id="bookId" class="form-control" required>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label class="form-label">Book Name</label>
+                            <input type="text" id="title" class="form-control" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Author</label>
+                            <input type="text" id="author" class="form-control" required>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label">Category</label>
+                            <input type="text" id="category" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" id="quantity" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <div class="form-switch">
+                                <input type="checkbox" id="status" class="form-check-input" checked>
+                                <label class="form-check-label">Available</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-save"></i> Save Book
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Book List Table -->
+        <div class="col-md-8" style="height: 600px; overflow: auto;">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center position-sticky top-0 z-3">
+                    <span><i class="bi bi-list-ul"></i> Book List</span>
+                    <input type="text" id="bookSearch" class="form-control form-control-sm w-75" placeholder="Search">
+                </div>
+
+                <div class="card-body p-0">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Author</th>
+                                <th>Category</th>
+                                <th>Qty</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody">
+                            
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>

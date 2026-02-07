@@ -1,0 +1,376 @@
+/* ===== Global ===== */
+:root {
+  --sidebar-w: 280px;
+  --gap: 14px;
+  --card-radius: 16px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f6f8fc;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.no-scroll {
+  overflow: hidden;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+/* ===== Overlay ===== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.25s ease;
+  z-index: 998;
+}
+
+.overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===== Left Panel (Sidebar) ===== */
+#leftPanel {
+  min-height: 100vh;
+  border-right: 1px solid #e6eaf2;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9ff 100%);
+  padding: 18px 14px;
+  box-shadow: 0 8px 22px rgba(16, 24, 40, 0.06);
+  position: sticky;
+  top: 0;
+}
+
+#leftPanel h3 {
+  margin: 6px 0 14px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+#leftPanel hr {
+  border-top: 1px solid #e6eaf2;
+  opacity: 1;
+}
+
+/* Navbar buttons */
+#navbar button {
+  border-radius: 12px;
+  padding: 12px 12px;
+  font-weight: 600;
+  border: 1px solid #dbe3f2;
+  background: #fff;
+  transition: 0.18s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+#navbar button:hover {
+  transform: translateY(-1px);
+  border-color: #9ec5fe;
+  box-shadow: 0 10px 18px rgba(13, 110, 253, 0.12);
+  background: rgb(70, 69, 69);
+}
+
+#navbar button.active {
+  background: #0d6efd;
+  color: #fff;
+  border-color: #0d6efd;
+}
+
+#navbar .bi {
+  font-size: 1.05rem;
+}
+
+/* ===== Right Panel ===== */
+#rightPanel {
+  padding: 14px 18px;
+}
+
+/* ===== Topbar (Header) ===== */
+.topbar {
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #e6eaf2;
+  border-radius: 14px;
+  box-shadow: 0 10px 20px rgba(16, 24, 40, 0.06);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-title {
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  text-align: left;
+}
+
+/* right side buttons */
+.topbar-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.topbar .btn {
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 700;
+}
+
+/* ===== Main Section Container ===== */
+#section {
+  margin-top: 16px;
+  background: #ffffff;
+  min-height: calc(100vh - 110px);
+  border-radius: var(--card-radius);
+  border: 1px solid #e6eaf2;
+  box-shadow: 0 12px 26px rgba(16, 24, 40, 0.06);
+  padding: 16px;
+}
+
+/* Tables responsiveness helper */
+.table-responsive {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+/* fine scroll */
+.fine-scroll {
+  height: 400px;
+  overflow: auto;
+}
+
+.dashboard-activity-box {
+  max-height: 270px;
+  overflow: auto;
+}
+
+/* highlight selected book row */
+.book-highlight {
+  outline: 2px solid #0d6efd;
+  background: #e9f2ff !important;
+}
+
+/* overdue row styling */
+#viewIssuedTbody tr.overdue-book td {
+  border-top: 2px solid #dc3545 !important;
+  border-bottom: 2px solid #dc3545 !important;
+  background: rgba(220, 53, 69, 0.06) !important;
+}
+
+#viewIssuedTbody tr.overdue-book td:first-child {
+  border-left: 2px solid #dc3545 !important;
+}
+
+#viewIssuedTbody tr.overdue-book td:last-child {
+  border-right: 2px solid #dc3545 !important;
+}
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+
+  /* Make right panel full width */
+  #rightPanel {
+    width: 100%;
+    padding: 10px;
+  }
+
+  /* Sidebar drawer */
+  #leftPanel {
+    width: min(var(--sidebar-w), 86vw);
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    transform: translateX(-110%);
+    transition: transform 0.28s ease;
+    z-index: 999;
+    border-right: 1px solid #e6eaf2;
+  }
+
+  #leftPanel.open {
+    transform: translateX(0);
+  }
+
+  /* ✅ Header layout on mobile:
+     1st row: (hamburger) + (center title)
+     2nd row: Admin One (left) + Logout (right)
+  */
+  .topbar {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px;
+  }
+
+  /* title center on mobile */
+  .topbar-title {
+    text-align: center;
+    justify-self: center;
+    font-size: 16px;
+    line-height: 1.1;
+  }
+
+  /* actions go to second row */
+  .topbar-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* Admin One left, Logout right */
+  #btnAdminOne {
+    justify-self: start;
+    width: 100%;
+    font-size: 13px;
+    /* ✅ add */
+    padding: 6px 10px;
+    /* ✅ add */
+    border-radius: 10px;
+    /* ✅ add */
+  }
+
+
+  /* section padding smaller */
+  #section {
+    padding: 12px;
+    min-height: calc(100vh - 140px);
+  }
+
+  /* Cards spacing a bit tighter */
+  .card {
+    border-radius: 14px;
+  }
+}
+
+/* ===== Print: only report table ===== */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  #reportPrintArea,
+  #reportPrintArea * {
+    visibility: visible !important;
+  }
+
+  #reportPrintArea {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #reportPrintArea .card-body>div {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  #reportPrintArea #btnPrintReport,
+  #reportPrintArea #btnExportPDF {
+    display: none !important;
+  }
+}
+
+/* blur + lock background when login modal open */
+body.login-lock #rightPanel,
+body.login-lock #leftPanel,
+body.login-lock .topbar,
+body.login-lock #section {
+  filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+}
+
+body.login-lock .modal,
+body.login-lock .modal * {
+  filter: none !important;
+  pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  .book-list-header {
+    position: static !important;
+    /* ✅ sticky off */
+    top: auto !important;
+    z-index: auto !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #bookSearch {
+    width: 55% !important;
+  }
+}
+
+/* ===== Student List table area scroll only ===== */
+.student-table-wrap {
+  max-height: 350px;
+  overflow: auto;
+}
+
+/* header me items overflow na kare */
+.student-head {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* search default width */
+.student-search {
+  width: 320px;
+  max-width: 100%;
+}
+
+/* filters group wrap */
+.student-filters {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ===== Mobile adjustments ===== */
+@media (max-width: 768px) {
+
+  .student-search {
+    width: 100%;
+    /* ✅ full width */
+    order: 3;
+  }
+
+  .student-filters {
+    width: 100%;
+    order: 4;
+    justify-content: flex-start;
+  }
+
+  .student-filters .btn {
+    flex: 1 1 auto;
+    /* ✅ buttons auto fit */
+    white-space: nowrap;
+  }
+}
+
+/* View Student Modal tables force responsive */
+#viewStudentModal .table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#viewStudentModal table {
+  min-width: 720px;
+  /* ✅ so columns don't crush on mobile */
+}
