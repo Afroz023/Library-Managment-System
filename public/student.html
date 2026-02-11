@@ -3,7 +3,7 @@
 
   <!-- Title -->
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold">🎓 Student Management</h3>
+    <h3 class="fw-bold"> Student Management</h3>
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal" id="openAddStudentModal">
       <i class="bi bi-person-plus"></i> Add Student
     </button>
@@ -70,39 +70,35 @@
 
 
   <!-- STUDENT TABLE -->
-  <div class="card shadow-sm border-0">
-    <div class="card-header bg-white fw-bold d-flex align-items-center gap-2">
-  📋 Student List
+<div class="card shadow-sm border-0 student-card">
+  <div class="card-header bg-white fw-bold d-flex align-items-center gap-2 student-head">
+     Student List
 
-  <input 
-    type="text" 
-    id="studentSearch"
-    class="form-control w-50 ms-lg-5"
-    placeholder="Search by Roll No, Name or Course..."
-  >
+    <input 
+      type="text" 
+      id="studentSearch"
+      class="form-control student-search"
+      placeholder="Search by Roll No, Name or Course or BookId..."
+    >
 
-<div class="btn-group ms-auto" role="group" aria-label="Student filters">
-  <button class="btn btn-outline-warning btn-sm" id="toggleWithBooks" type="button">
-    <i class="bi bi-journal-bookmark"></i> With Books: OFF
-  </button>
+    <div class="btn-group student-filters ms-auto" role="group" aria-label="Student filters">
+      <button class="btn btn-outline-warning btn-sm" id="toggleWithBooks" type="button">
+        <i class="bi bi-journal-bookmark"></i> With Books: OFF
+      </button>
 
-  <button class="btn btn-outline-secondary btn-sm" id="toggleWithoutBooks" type="button">
-    <i class="bi bi-person-dash"></i> Without Books: OFF
-  </button>
+      <button class="btn btn-outline-secondary btn-sm" id="toggleWithoutBooks" type="button">
+        <i class="bi bi-person-dash"></i> Without Books: OFF
+      </button>
 
-  <!-- ✅ ADD THIS -->
-<button class="btn btn-outline-danger btn-sm" id="toggleOverdueBooks" type="button" style="display:none;">
-  <i class="bi bi-exclamation-triangle"></i> Overdue: OFF
-</button>
+      <button class="btn btn-outline-danger btn-sm" id="toggleOverdueBooks" type="button" style="display:none;">
+        <i class="bi bi-exclamation-triangle"></i> Overdue: OFF
+      </button>
+    </div>
+  </div>
 
-</div>
-
-
-</div>
-
-
-    <div class="card-body">
-      <table class="table table-hover align-middle">
+  <div class="card-body p-0">
+    <div class="table-responsive student-table-wrap">
+      <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
             <th>Roll No</th>
@@ -110,7 +106,7 @@
             <th>Email</th>
             <th>Mobile</th>
             <th>Course</th>
-             <th class="text-center">Books Issued</th>
+            <th class="text-center">Books Issued</th>
             <th class="text-center">Action</th>
           </tr>
         </thead>
@@ -118,6 +114,8 @@
       </table>
     </div>
   </div>
+</div>
+
 
   <!-- Add Student Modal -->
   <div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
@@ -214,7 +212,7 @@
           <!-- Issued Books Section -->
 <div class="card shadow-sm">
   <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-    📚 Issued Books
+     Issued Books
     <span class="badge bg-primary" id="issuedCount">0</span>
   </div>
 
@@ -239,8 +237,36 @@
     </div>
   </div>
 </div>
+<div class="form-check form-switch mt-3">
+  <input class="form-check-input" type="checkbox" id="historySwitch">
+  <label class="form-check-label fw-semibold" for="historySwitch">History</label>
+</div>
 
-        </div>
+<div id="historyBox" class="d-none mt-2">
+  <div class="table-responsive border rounded" style="max-height: 180px; overflow:auto;">
+    <table class="table table-sm table-striped align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Book ID</th>
+          <th>Issue</th>
+          <th>Due</th>
+          <th>Return</th>
+          <th>Late</th>
+          <th>Fine</th>
+          <th>Paid</th>
+          <th>Paid At</th>
+        </tr>
+      </thead>
+      <tbody id="historyTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+
+</div>
+
+
 
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
