@@ -450,7 +450,7 @@
             resetStudentModal();
             loadStudents();
             loadStudentCounts();
-            
+
           })
           .fail(function (xhr) {
             alert(xhr.responseText || "Operation failed ");
@@ -461,8 +461,8 @@
         let rollNo = $(this).data("roll");
         let course = $(this).data("course");
         if (!confirm("Are you sure you want to delete this student?")) return;
-         // ✅ remove from newest-order store
-         removeStudentFromOrderByKey(`${Number(rollNo)}__${String(course || "").trim().toUpperCase()}`);
+        // ✅ remove from newest-order store
+        removeStudentFromOrderByKey(`${Number(rollNo)}__${String(course || "").trim().toUpperCase()}`);
 
         $.ajax({
           method: "DELETE",
@@ -1126,51 +1126,51 @@
     // ================= OUTSIDE READY (GLOBAL FUNCTIONS) =================
 
     // ✅ newest-first order store
-const STUDENT_ORDER_KEY = "LIBRA_STUDENT_ORDER_V1";
-let lastAddedStudentKey = null;
+    const STUDENT_ORDER_KEY = "LIBRA_STUDENT_ORDER_V1";
+    let lastAddedStudentKey = null;
 
-function studentKey(s) {
-  return `${Number(s.rollNo)}__${String(s.course || "").trim().toUpperCase()}`;
-}
+    function studentKey(s) {
+      return `${Number(s.rollNo)}__${String(s.course || "").trim().toUpperCase()}`;
+    }
 
-function loadStudentOrder() {
-  try {
-    const raw = localStorage.getItem(STUDENT_ORDER_KEY);
-    const arr = JSON.parse(raw || "[]");
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
+    function loadStudentOrder() {
+      try {
+        const raw = localStorage.getItem(STUDENT_ORDER_KEY);
+        const arr = JSON.parse(raw || "[]");
+        return Array.isArray(arr) ? arr : [];
+      } catch {
+        return [];
+      }
+    }
 
-function saveStudentOrder(arr) {
-  localStorage.setItem(STUDENT_ORDER_KEY, JSON.stringify(arr || []));
-}
+    function saveStudentOrder(arr) {
+      localStorage.setItem(STUDENT_ORDER_KEY, JSON.stringify(arr || []));
+    }
 
-function pinStudentOnTop(student) {
-  const key = studentKey(student);
-  lastAddedStudentKey = key;
+    function pinStudentOnTop(student) {
+      const key = studentKey(student);
+      lastAddedStudentKey = key;
 
-  const order = loadStudentOrder();
-  const next = [key, ...order.filter(k => k !== key)];
-  saveStudentOrder(next);
-}
+      const order = loadStudentOrder();
+      const next = [key, ...order.filter(k => k !== key)];
+      saveStudentOrder(next);
+    }
 
-function removeStudentFromOrderByKey(key) {
-  const order = loadStudentOrder();
-  saveStudentOrder(order.filter(k => k !== key));
-}
+    function removeStudentFromOrderByKey(key) {
+      const order = loadStudentOrder();
+      saveStudentOrder(order.filter(k => k !== key));
+    }
 
-function sortByNewestAdded(students) {
-  const order = loadStudentOrder();              // newest first
-  const rank = new Map(order.map((k, i) => [k, i]));
+    function sortByNewestAdded(students) {
+      const order = loadStudentOrder();              // newest first
+      const rank = new Map(order.map((k, i) => [k, i]));
 
-  // ✅ stable sort: ordered ones first (by rank), baki original order me
-  return (students || [])
-    .map((s, idx) => ({ s, idx, r: rank.has(studentKey(s)) ? rank.get(studentKey(s)) : Number.POSITIVE_INFINITY }))
-    .sort((a, b) => (a.r - b.r) || (a.idx - b.idx))
-    .map(x => x.s);
-}
+      // ✅ stable sort: ordered ones first (by rank), baki original order me
+      return (students || [])
+        .map((s, idx) => ({ s, idx, r: rank.has(studentKey(s)) ? rank.get(studentKey(s)) : Number.POSITIVE_INFINITY }))
+        .sort((a, b) => (a.r - b.r) || (a.idx - b.idx))
+        .map(x => x.s);
+    }
 
     function studentHasBooks(student) {
       const issuedLen = Array.isArray(student.issuedBooks) ? student.issuedBooks.length : 0;
@@ -1258,7 +1258,7 @@ function sortByNewestAdded(students) {
           return matchBasic || matchBookId;
         });
       }
-      
+
       renderStudentsTable(list);
 
       if (!list.length) $("#noStudentRow").removeClass("d-none");
